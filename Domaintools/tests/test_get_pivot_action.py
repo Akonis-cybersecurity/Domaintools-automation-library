@@ -10,8 +10,10 @@ import hmac
 import hashlib
 
 DOMAIN: str = "google.com"
+QUERY_VALUE: str = "google.com"
+PIVOT_TYPE: str = "domain"
 HOST = "https://api.domaintools.com/"
-URI = f"v1/iris-investigate/"  # Base URI without domain
+URI = "v1/iris-investigate/"  # Base URI without domain
 API_KEY = "LOREM"
 API_USERNAME = "IPSUM"
 TIMESTAMP = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -74,11 +76,11 @@ def test_get_pivot_action_action_success():
                     # "api_username": API_USERNAME,
                     # "signature": signature,
                     # "timestamp": TIMESTAMP,
-                    "domain": DOMAIN  # Add the domain parameter
+                    "domain": QUERY_VALUE  # pivot_action uses pivot_type as param name
                 }
             ),
         )
-        result = action.run({"domain": DOMAIN})
+        result = action.run({"query_value": QUERY_VALUE, "pivot_type": PIVOT_TYPE})
 
         assert result is not None
         data = result  # Response is already a dict, no need for json.loads()
@@ -105,11 +107,11 @@ def test_get_pivot_action_action_api_error():
                     # "api_username": API_USERNAME,
                     # "signature": signature,
                     # "timestamp": TIMESTAMP,
-                    "domain": DOMAIN  # Add the domain parameter
+                    "domain": QUERY_VALUE  # pivot_action uses pivot_type as param name
                 }
             ),
         )
-        result = action.run({"domain": DOMAIN})
+        result = action.run({"query_value": QUERY_VALUE, "pivot_type": PIVOT_TYPE})
 
         if result:
             data = result  # Response is already a dict, no need for json.loads()

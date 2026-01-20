@@ -9,9 +9,9 @@ import urllib.parse
 import hmac
 import hashlib
 
-DOMAIN: str = "google.com"
+IP_ADDRESS: str = "23.192.228.80"
 HOST = "https://api.domaintools.com/"
-URI = f"v1/{DOMAIN}/reverse-ip/"
+URI = f"v1/{IP_ADDRESS}/reverse-ip/"
 API_KEY = "LOREM"
 API_USERNAME = "IPSUM"
 TIMESTAMP = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -60,13 +60,13 @@ def test_get_reverse_ip_action_success():
     action.module.configuration = {"api_key": API_KEY, "api_username": API_USERNAME, "host": HOST}
 
     with requests_mock.Mocker() as mock_requests:
-        # Mock the actual URL that will be called (including domain parameter)
-        # /!\ DOMAIN is not sent in params but in the URL path /!\
+        # Mock the actual URL that will be called (including IP in URL path)
+        # /!\ IP is not sent in params but in the URL path /!\
         mock_requests.get(
             urllib.parse.urljoin(HOST, URI),
             json=DT_OUTPUT,  # Return the expected response
         )
-        result = action.run({"domain": DOMAIN})
+        result = action.run({"ip": IP_ADDRESS})
 
         assert result is not None
         data = result  # Response is already a dict, no need for json.loads()
@@ -89,7 +89,7 @@ def test_get_reverse_ip_action_api_error():
             status_code=500,  # Return an error status
             json={"error": {"message": "Internal Server Error"}},
         )
-        result = action.run({"domain": DOMAIN})
+        result = action.run({"ip": IP_ADDRESS})
 
         if result:
             data = result  # Response is already a dict, no need for json.loads()

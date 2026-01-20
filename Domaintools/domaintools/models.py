@@ -286,27 +286,27 @@ class DomainToolsClient:
         logger.info(f"Successfully retrieved reverse domain data for {domain}")
         return result
 
-    def reverse_ip(self, domain: str) -> Dict[str, Any]:
+    def reverse_ip(self, ip: str) -> Dict[str, Any]:
         """
-        Query DomainTools Reverse IP API to find domains on the same IP.
+        Query DomainTools Reverse IP API to find domains hosted on the same IP.
 
         Args:
-            domain: The domain name to look up
+            ip: The IP address to look up
 
         Returns:
             Dictionary containing the API response with domain list
 
         Example:
-            results = client.reverse_ip('example.com')
+            results = client.reverse_ip('8.8.8.8')
             print(f"Found {results['response']['ip_addresses']['domain_count']} domains")
         """
-        logger.info(f"Getting reverse IP data for: {domain}")
-        domain = self._validate_domain(domain)
+        logger.info(f"Getting reverse IP data for: {ip}")
+        ip = self._validate_ip(ip)
 
-        uri = f"/v1/{domain}/reverse-ip/"
+        uri = f"/v1/{ip}/reverse-ip/"
 
         result = self._make_request(uri)
-        logger.info(f"Successfully retrieved reverse IP data for {domain}")
+        logger.info(f"Successfully retrieved reverse IP data for {ip}")
         return result
 
     def reverse_email(self, email: str, limit: int = 100) -> Dict:
@@ -377,6 +377,8 @@ class BaseDomaintoolsAction:
                 "domain": arguments.get("domain"),
                 "ip": arguments.get("ip"),
                 "email": arguments.get("email"),
+                "query_value": arguments.get("query_value"),
+                "pivot_type": arguments.get("pivot_type"),
                 "domaintools_action": self.action_name,
             }
 
@@ -400,14 +402,17 @@ def DomaintoolsrunAction(config: DomainToolsConfig, arguments: dict[str, Any]) -
         client = DomainToolsClient(config)
 
         arg_domain = arguments.get("domain")
+        arg_ip = arguments.get("ip")
         arg_email = arguments.get("email")
+        arg_query_value = arguments.get("query_value")
+        arg_pivot_type = arguments.get("pivot_type")
         arg_action = arguments.get("domaintools_action")
 
         dispatch = {
             "domain_reputation": ("domain_reputation", lambda: [arg_domain], {}, "Domain Reputation"),
-            "pivot_action": ("pivot_action", lambda: [arg_domain, "domain"], {"limit": 100}, "Pivot Action"),
+            "pivot_action": ("pivot_action", lambda: [arg_query_value, arg_pivot_type], {"limit": 100}, "Pivot Action"),
             "reverse_domain": ("reverse_domain", lambda: [arg_domain], {}, "Reverse Domain"),
-            "reverse_ip": ("reverse_ip", lambda: [arg_domain], {}, "Reverse IP"),
+            "reverse_ip": ("reverse_ip", lambda: [arg_ip], {}, "Reverse IP"),
             "reverse_email": ("reverse_email", lambda: [arg_email], {"limit": 100}, "Reverse Email"),
             "lookup_domain": ("lookup_domain", lambda: [arg_domain], {}, "Lookup Domain"),
         }

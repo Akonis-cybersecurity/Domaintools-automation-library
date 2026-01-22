@@ -222,7 +222,7 @@ class DomainToolsClient:
         Returns:
             Domain reputation and risk data
         """
-        logger.info(f"Getting domain reputation for: {domain}")
+        self.log(f"Getting domain reputation for: {domain}")
         domain = self._validate_domain(domain)
 
         # Use Iris Investigate endpoint with domain search
@@ -230,7 +230,7 @@ class DomainToolsClient:
         params = {"domain": domain}
 
         result = self._make_request(uri, params)
-        logger.info(f"Successfully retrieved reputation for {domain}")
+        self.log(f"Successfully retrieved reputation for {domain}")
         return result
 
     def pivot_action(self, search_term: str, search_type: str, limit: int = 100) -> Dict:
@@ -245,7 +245,7 @@ class DomainToolsClient:
         Returns:
             Connected domains data
         """
-        logger.info(f"Performing pivot action: {search_type} -> {search_term}")
+        self.log(f"Performing pivot action: {search_type} -> {search_term}")
 
         if not search_term:
             raise DomainToolsError("Search term cannot be empty")
@@ -263,7 +263,7 @@ class DomainToolsClient:
         params = {search_type: search_term, "limit": max(100, min(limit, 10000))}  # Ensure between 100-10000
 
         result = self._make_request(uri, params)
-        logger.info(f"Successfully performed pivot action for {search_term}")
+        self.log(f"Successfully performed pivot action for {search_term}")
         return result
 
     def reverse_domain(self, domain: str) -> Dict:
@@ -276,14 +276,14 @@ class DomainToolsClient:
         Returns:
             Domain IP and infrastructure data
         """
-        logger.info(f"Getting reverse domain data for: {domain}")
+        self.log(f"Getting reverse domain data for: {domain}")
         domain = self._validate_domain(domain)
 
         # Use the correct hosting history endpoint
         uri = f"/v1/{domain}/hosting-history/"
 
         result = self._make_request(uri)
-        logger.info(f"Successfully retrieved reverse domain data for {domain}")
+        self.log(f"Successfully retrieved reverse domain data for {domain}")
         return result
 
     def reverse_ip(self, ip: str) -> Dict[str, Any]:
@@ -300,13 +300,13 @@ class DomainToolsClient:
             results = client.reverse_ip('8.8.8.8')
             print(f"Found {results['response']['ip_addresses']['domain_count']} domains")
         """
-        logger.info(f"Getting reverse IP data for: {ip}")
+        self.log(f"Getting reverse IP data for: {ip}")
         ip = self._validate_ip(ip)
 
         uri = f"/v1/{ip}/reverse-ip/"
 
         result = self._make_request(uri)
-        logger.info(f"Successfully retrieved reverse IP data for {ip}")
+        self.log(f"Successfully retrieved reverse IP data for {ip}")
         return result
 
     def reverse_email(self, email: str, limit: int = 100) -> Dict:
@@ -320,7 +320,7 @@ class DomainToolsClient:
         Returns:
             Domains associated with the email
         """
-        logger.info(f"Getting reverse email data for: {email}")
+        self.log(f"Getting reverse email data for: {email}")
         email = self._validate_email(email)
 
         # Use Iris Investigate with email parameter
@@ -328,7 +328,7 @@ class DomainToolsClient:
         params = {"email": email, "limit": max(100, min(limit, 10000))}  # Ensure minimum 100
 
         result = self._make_request(uri, params)
-        logger.info(f"Successfully retrieved reverse email data for {email}")
+        self.log(f"Successfully retrieved reverse email data for {email}")
         return result
 
     def lookup_domain(self, domain: str) -> Dict:
@@ -341,14 +341,14 @@ class DomainToolsClient:
         Returns:
             Complete domain investigation data
         """
-        logger.info(f"Performing complete domain lookup for: {domain}")
+        self.log(f"Performing complete domain lookup for: {domain}")
         domain = self._validate_domain(domain)
 
         uri = "/v1/iris-investigate/"
         params = {"domain": domain}  # Changed from 'q' to 'domain'
 
         result = self._make_request(uri, params)
-        logger.info(f"Successfully retrieved complete domain data for {domain}")
+        self.log(f"Successfully retrieved complete domain data for {domain}")
         return result
 
 

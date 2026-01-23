@@ -71,6 +71,10 @@ class DomainToolsClient:
         self._validate_config()
         self._setup_session()
 
+    def log(self, message: str) -> None:
+        """Log client messages through the module logger."""
+        logger.info(message)
+
     def _validate_config(self) -> None:
         """Validate configuration parameters"""
         if not self.config.api_username:

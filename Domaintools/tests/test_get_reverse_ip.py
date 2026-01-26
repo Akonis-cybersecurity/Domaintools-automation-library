@@ -11,7 +11,7 @@ import hashlib
 
 IP_ADDRESS: str = "23.192.228.80"
 HOST = "https://api.domaintools.com/"
-URI = f"v1/{IP_ADDRESS}/reverse-ip/"
+URI = f"v1/{IP_ADDRESS}/host-domains/"
 API_KEY = "LOREM"
 API_USERNAME = "IPSUM"
 TIMESTAMP = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

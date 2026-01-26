@@ -307,7 +307,7 @@ class DomainToolsClient:
         self.log(f"Getting reverse IP data for: {ip}")
         ip = self._validate_ip(ip)
 
-        uri = f"/v1/{ip}/reverse-ip/"
+        uri = f"/v1/{ip}/host-domains/"
 
         result = self._make_request(uri)
         self.log(f"Successfully retrieved reverse IP data for {ip}")

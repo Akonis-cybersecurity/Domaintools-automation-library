@@ -11,13 +11,19 @@
         "type": "string"
       },
       "pivot_type": {
-        "description": "The infrastructure indicator type to pivot on (e.g., 'domain', 'ip', 'email', 'nameserver_host')",
+        "description": "The infrastructure indicator type to pivot on",
         "type": "string",
         "enum": [
           "domain",
           "ip",
           "email",
           "nameserver_host"
+        ],
+        "enumNames": [
+          "Domain",
+          "IP Address",
+          "Email Address",
+          "Nameserver Host"
         ]
       }
     },

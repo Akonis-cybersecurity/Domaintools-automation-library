@@ -6,6 +6,7 @@ from domaintools.get_pivot_action import DomaintoolsPivotAction
 from domaintools.get_reverse_domain import DomaintoolsReverseDomain
 from domaintools.get_reverse_email import DomaintoolsReverseEmail
 from domaintools.get_reverse_ip import DomaintoolsReverseIP
+from domaintools.get_iris_reverse_ip import DomaintoolsIrisReverseIP
 
 if __name__ == "__main__":
     module = Module()
@@ -16,5 +17,6 @@ if __name__ == "__main__":
     module.register(DomaintoolsReverseDomain, "get_reverse_domain")
     module.register(DomaintoolsReverseEmail, "get_reverse_email")
     module.register(DomaintoolsReverseIP, "get_reverse_ip")
+    module.register(DomaintoolsIrisReverseIP, "get_iris_reverse_ip")
 
     module.run()

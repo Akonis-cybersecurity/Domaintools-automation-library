@@ -292,17 +292,22 @@ class DomainToolsClient:
 
     def reverse_ip(self, ip: str) -> Dict[str, Any]:
         """
-        Query DomainTools Reverse IP API to find domains hosted on the same IP.
+        Query DomainTools Reverse IP API to find domains sharing the same Internet host.
+
+        Identifies domain names hosted on the specified IP address. Results represent
+        a subset of domains on shared hosting for investigative use, not exhaustive
+        enumeration. Unsuitable for large CDNs or cloud providers.
 
         Args:
-            ip: The IP address to look up
+            ip: The IP address to look up (e.g., '199.30.228.77')
 
         Returns:
-            Dictionary containing the API response with domain list
+            Dictionary containing ip_addresses array with domain_count and domain_names
 
         Example:
-            results = client.reverse_ip('8.8.8.8')
-            print(f"Found {results['response']['ip_addresses']['domain_count']} domains")
+            results = client.reverse_ip('199.30.228.77')
+            for ip_info in results['response']['ip_addresses']:
+                print(f"IP: {ip_info['ip_address']}, Domains: {ip_info['domain_count']}")
         """
         self.log(f"Getting reverse IP data for: {ip}")
         ip = self._validate_ip(ip)
@@ -311,6 +316,41 @@ class DomainToolsClient:
 
         result = self._make_request(uri)
         self.log(f"Successfully retrieved reverse IP data for {ip}")
+        return result
+
+    def iris_reverse_ip(self, ip: str, limit: int = 100) -> Dict[str, Any]:
+        """
+        Query DomainTools Iris Investigate API to find domains associated with an IP.
+
+        Uses the comprehensive Iris Investigate endpoint to retrieve detailed domain
+        information including risk scores, WHOIS data, SSL certificates, DNS records,
+        and more for domains resolving to the specified IP address.
+
+        Args:
+            ip: The IP address to look up (e.g., '199.30.228.112')
+            limit: Maximum number of results to return (100-10000)
+
+        Returns:
+            Dictionary containing detailed domain investigation data including:
+            - Domain risk scores and components
+            - WHOIS contact information
+            - DNS records (MX, NS, IP)
+            - SSL certificate details
+            - Server and website information
+
+        Example:
+            results = client.iris_reverse_ip('199.30.228.112')
+            for domain in results['response']['results']:
+                print(f"Domain: {domain['domain']}, Risk: {domain['domain_risk']['risk_score']}")
+        """
+        self.log(f"Getting Iris Investigate reverse IP data for: {ip}")
+        ip = self._validate_ip(ip)
+
+        uri = "/v1/iris-investigate/"
+        params = {"ip": ip, "limit": max(100, min(limit, 10000))}
+
+        result = self._make_request(uri, params)
+        self.log(f"Successfully retrieved Iris reverse IP data for {ip}")
         return result
 
     def reverse_email(self, email: str, limit: int = 100) -> Dict:
@@ -414,9 +454,15 @@ def DomaintoolsrunAction(config: DomainToolsConfig, arguments: dict[str, Any]) -
 
         dispatch = {
             "domain_reputation": ("domain_reputation", lambda: [arg_domain], {}, "Domain Reputation"),
-            "pivot_action": ("pivot_action", lambda: [arg_query_value, arg_pivot_type], {"limit": 100}, "Pivot Action"),
+            "pivot_action": (
+                "pivot_action",
+                lambda: [arg_query_value, arg_pivot_type],
+                {"limit": 100},
+                "Pivot Action",
+            ),
             "reverse_domain": ("reverse_domain", lambda: [arg_domain], {}, "Reverse Domain"),
             "reverse_ip": ("reverse_ip", lambda: [arg_ip], {}, "Reverse IP"),
+            "iris_reverse_ip": ("iris_reverse_ip", lambda: [arg_ip], {"limit": 100}, "Iris Reverse IP"),
             "reverse_email": ("reverse_email", lambda: [arg_email], {"limit": 100}, "Reverse Email"),
             "lookup_domain": ("lookup_domain", lambda: [arg_domain], {}, "Lookup Domain"),
         }

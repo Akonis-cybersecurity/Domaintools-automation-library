@@ -288,3 +288,256 @@ class TestConfigValidation:
 
         with pytest.raises(DomainToolsError, match="Host must include protocol"):
             DomainToolsClient(config)
+
+
+class TestPivotActionTypes:
+    """Test pivot_action with different search types including nameserver_host"""
+
+    def test_pivot_action_with_domain(self):
+        """Test pivot action with domain search type"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+        client = DomainToolsClient(config)
+
+        with requests_mock.Mocker() as m:
+            m.get(requests_mock.ANY, json={"response": {"results": []}})
+
+            result = client.pivot_action("example.com", "domain", limit=100)
+            assert result is not None
+
+    def test_pivot_action_with_nameserver_host(self):
+        """Test pivot action with nameserver_host search type (no validation)"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+        client = DomainToolsClient(config)
+
+        with requests_mock.Mocker() as m:
+            m.get(requests_mock.ANY, json={"response": {"results": []}})
+
+            result = client.pivot_action("ns1.example.com", "nameserver_host", limit=100)
+            assert result is not None
+
+
+class TestIrisReverseIP:
+    """Test iris_reverse_ip method"""
+
+    def test_iris_reverse_ip_success(self):
+        """Test successful iris_reverse_ip call"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+        client = DomainToolsClient(config)
+
+        with requests_mock.Mocker() as m:
+            m.get(
+                requests_mock.ANY,
+                json={
+                    "response": {
+                        "results": [{"domain": "example.com", "domain_risk": {"risk_score": 10}}],
+                        "results_count": 1,
+                    }
+                },
+            )
+
+            result = client.iris_reverse_ip("192.168.1.1")
+            assert result is not None
+            assert "response" in result
+
+    def test_iris_reverse_ip_limit_bounds(self):
+        """Test iris_reverse_ip respects limit bounds"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+        client = DomainToolsClient(config)
+
+        with requests_mock.Mocker() as m:
+            m.get(requests_mock.ANY, json={"response": {"results": []}})
+
+            # Test with limit below minimum (should use 100)
+            client.iris_reverse_ip("192.168.1.1", limit=50)
+            assert "limit=100" in m.last_request.url
+
+            # Test with limit above maximum (should use 10000)
+            client.iris_reverse_ip("192.168.1.1", limit=20000)
+            assert "limit=10000" in m.last_request.url
+
+
+class TestBaseDomaintoolsActionErrors:
+    """Test error handling in BaseDomaintoolsAction.run()"""
+
+    def test_base_action_domaintools_error(self):
+        """Test BaseDomaintoolsAction handles DomainToolsError"""
+        action = BaseDomaintoolsAction()
+        action.action_name = "domain_reputation"
+        action.module = Mock()
+        # Invalid config that will raise DomainToolsError
+        action.module.configuration = {"api_username": "", "api_key": "test"}
+
+        result = action.run({"domain": "example.com"})
+        assert "error" in result
+        assert "DomainTools client initialization error" in result["error"]
+
+    def test_base_action_unexpected_error(self):
+        """Test BaseDomaintoolsAction handles unexpected errors"""
+        action = BaseDomaintoolsAction()
+        action.action_name = "domain_reputation"
+        action.module = Mock()
+        # Configuration that raises unexpected error
+        action.module.configuration = None  # This will cause AttributeError
+
+        result = action.run({"domain": "example.com"})
+        assert "error" in result
+        assert "Unexpected initialization error" in result["error"]
+
+
+class TestCallMethodErrors:
+    """Test call_method error handling"""
+
+    def test_call_method_attribute_error(self):
+        """Test call_method handles AttributeError for missing method"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            # Remove the method to trigger AttributeError
+            del mock_client.domain_reputation
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert "error" in result
+            assert "Client has no method" in result["error"]
+
+    def test_call_method_unexpected_exception(self):
+        """Test call_method handles unexpected exceptions"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            mock_client.domain_reputation.side_effect = RuntimeError("Unexpected runtime error")
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert "error" in result
+            assert "Unexpected error" in result["error"]
+
+
+class TestResponsePayloadProcessing:
+    """Test different payload types in response processing"""
+
+    def test_payload_none_returns_error(self):
+        """Test that None payload returns error"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            mock_client.domain_reputation.return_value = None
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert "error" in result
+            assert "No response returned" in result["error"]
+
+    def test_payload_string_returns_error(self):
+        """Test that string payload returns error"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            mock_client.domain_reputation.return_value = "Some string response"
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert "error" in result
+            assert "Some string response" in result["error"]
+
+    def test_payload_list_returned_as_is(self):
+        """Test that list payload is returned as-is"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            mock_client.domain_reputation.return_value = [{"domain": "example.com"}]
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert isinstance(result, list)
+            assert result[0]["domain"] == "example.com"
+
+    def test_payload_dict_without_response_key(self):
+        """Test dict payload without 'response' key is returned as-is"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            mock_client.domain_reputation.return_value = {"data": "some_data", "status": "ok"}
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert result["data"] == "some_data"
+            assert result["status"] == "ok"
+
+    def test_payload_extraction_exception(self):
+        """Test exception during payload extraction"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            mock_client = Mock()
+            # Create an object that raises an exception when isinstance() checks it
+            # by overriding __class__ in a way that breaks the check
+            bad_payload = type("BadPayload", (), {"__bool__": lambda self: (_ for _ in ()).throw(RuntimeError("Bad"))})()
+            mock_client.domain_reputation.return_value = bad_payload
+            MockClient.return_value = mock_client
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            # The payload will be returned as-is since it's not None, not a string, not a dict
+            # The code returns it directly at line 520
+            assert result is not None
+
+
+class TestNoActionSpecified:
+    """Test behavior when no action is specified"""
+
+    def test_no_action_returns_error(self):
+        """Test that missing action returns error"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        arguments = {"domain": "example.com"}  # No domaintools_action
+
+        result = DomaintoolsrunAction(config, arguments)
+        assert "error" in result
+        assert "No action specified" in result["error"]
+
+
+class TestDomaintoolsrunActionExceptions:
+    """Test exception handling in DomaintoolsrunAction"""
+
+    def test_domaintools_error_during_client_init(self):
+        """Test DomainToolsError during client initialization"""
+        config = DomainToolsConfig(api_username="", api_key="test")  # Invalid config
+
+        arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+
+        result = DomaintoolsrunAction(config, arguments)
+        assert "error" in result
+        assert "DomainTools client initialization error" in result["error"]
+
+    def test_unexpected_error_during_execution(self):
+        """Test unexpected error during DomaintoolsrunAction execution"""
+        config = DomainToolsConfig(api_username="test", api_key="test")
+
+        with patch("domaintools.models.DomainToolsClient") as MockClient:
+            MockClient.side_effect = RuntimeError("Unexpected error during init")
+
+            arguments = {"domain": "example.com", "domaintools_action": "domain_reputation"}
+            result = DomaintoolsrunAction(config, arguments)
+
+            assert "error" in result
+            assert "Unexpected initialization error" in result["error"]

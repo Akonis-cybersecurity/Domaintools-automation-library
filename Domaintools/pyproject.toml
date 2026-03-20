@@ -52,3 +52,8 @@ addopts = '''
   --cov-fail-under=5
   --capture=sys
 '''
+
+[dependency-groups]
+dev = [
+    "pytest-cov (>=7.0.0,<8.0.0)"
+]

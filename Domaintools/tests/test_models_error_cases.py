@@ -490,7 +490,9 @@ class TestResponsePayloadProcessing:
             mock_client = Mock()
             # Create an object that raises an exception when isinstance() checks it
             # by overriding __class__ in a way that breaks the check
-            bad_payload = type("BadPayload", (), {"__bool__": lambda self: (_ for _ in ()).throw(RuntimeError("Bad"))})()
+            bad_payload = type(
+                "BadPayload", (), {"__bool__": lambda self: (_ for _ in ()).throw(RuntimeError("Bad"))}
+            )()
             mock_client.domain_reputation.return_value = bad_payload
             MockClient.return_value = mock_client
 

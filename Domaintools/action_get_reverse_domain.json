@@ -39,7 +39,10 @@
               "description": "The IP address after the change (new IP address)"
             },
             "pre_ip": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "The IP address before the change (previous IP address, null for initial setup)"
             },
             "action": {
